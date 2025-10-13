@@ -4,9 +4,9 @@ class,2,Donald Trump,1946-06-14,"Business, Table Tennis","1 Pennsylvania Ave, Wa
 class,3,Ada Lovelace,1815-12-10,"Math, Poetry","12 Logic Ave, London, UK","Analytical Eng.",3.png,,,,,
 class,4,Alan Turing,1912-06-23,"Cryptography, Run","1 Enigma Rd, Bletchley","Bombe Lab",4.jpg,,,,,
 class,5,Grace Hopper,1906-12-09,"Navy, Compilers","Harvard Mark I, Cambridge","US Navy",5.jpg,,,,,
-teacher,101,Prof. Donald Knuth,1938-01-10,,,101.jpg,CS,Main Hall 302,,,,
-teacher,102,Prof. Geoffrey Hinton,1947-12-06,,,102.jpg,AI,Science 512,,,,
-teacher,103,Prof. Daphne Koller,1968-08-27,,,103.jpg,ML,Engineering 220,,,,
+teacher,101,Prof. Donald Knuth,1938-01-10,,,,101.jpg, CS,Main Hall 302,,,
+teacher,102,Prof. Geoffrey Hinton,1947-12-06,,,,102.jpg,AI,Science 512,,,
+teacher,103,Prof. Daphne Koller,1968-08-27,,,,103.jpg,ML,Engineering 220,,,
 place,201,,,,,,,,,"Main Hall",201_then.jpg,201_now.jpg
 place,202,,,,,,,,,"Physics Lab",202_then.jpg,202_now.jpg
 place,203,,,,,,,,,"Classroom A",203_then.jpg,203_now.jpg
