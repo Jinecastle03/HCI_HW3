@@ -180,29 +180,94 @@ header h2 {
 }
 
 /* Update */
-.upd-form {
-  width: 90%;
-  max-width: 680px;
+/* Update flow */
+.update-header {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.upd-form label {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  width: 100%;
+  max-width: 900px;
 }
 
-.upd-form input {
-  flex: 1;
-  padding: 8px 10px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 15px;
+.update-what,
+.update-pick {
+  width: 90%;
+  max-width: 700px;
+  margin-top: 16px;
 }
+
+.update-label {
+  font-weight: 700;
+  font-size: 18px;
+  margin: 12px 0 8px;
+}
+
+.who-group {
+  display: flex;
+  justify-content: center;
+}
+
+.seg {
+  border: 1px solid #6a8ad6;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.seg:active {
+  transform: translateY(1px);
+}
+
+.upd-select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.upd-form.big {
+  width: 90%;
+  max-width: 720px;
+  margin-top: 18px;
+}
+
+.upd-form.big label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.upd-form.big input,
+.upd-form.big textarea {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.update-actions {
+  margin-top: 14px;
+}
+
+.update-actions.two {
+  display: flex;
+  gap: 12px;
+}
+
+.update-download {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 
 /* Search UI (Who + Name) */
 .search-header {
@@ -260,27 +325,86 @@ header h2 {
   display: flex;
   flex-direction: column;
   gap: 28px;
-  align-items: flex-start;
+  align-items: center;
 }
 
+/* === Search tile 개선 === */
 .tile {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  align-items: flex-start;
-  margin-left: auto;
-  margin-right: auto;
+  align-items: center;
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.tile:hover {
+  transform: scale(1.03);
+}
+
+.tile-img-wrap {
+  position: relative;
+  display: inline-block;
 }
 
 .tile img {
   width: 220px;
   height: 220px;
   object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  transition: filter 0.3s ease;
+}
+
+.tile:hover img {
+  filter: brightness(0.7);
+}
+
+.view-btn {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #888;
   border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.tile:hover .view-btn {
+  opacity: 1;
+}
+
+.detail {
+  width: 90%;
+  max-width: 700px;
+  margin: 16px auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.detail-img {
+  width: 240px;
+  height: 240px;
+  object-fit: cover;
+  border-radius: 8px;
   border: 1px solid #ccc;
 }
 
-.tile figcaption {
-  font-size: 14px;
+.detail-name {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 10px 0 6px;
+}
+
+.detail-row {
+  font-size: 15px;
   color: #333;
+  margin: 2px 0;
 }

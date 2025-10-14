@@ -193,6 +193,52 @@ function renderTeachers() {
 }
 
 /***** 6) Search (Who + Name + 썸네일 결과) *****/
+// === 상세 보기(인물) ===
+function renderPersonDetail(item, role) { // role: 'class' | 'teacher'
+  const menu = document.getElementById('menu');
+  const name = item?.name || '';
+  const img = item?.photo || '';
+  const body = role === 'class'
+    ? `
+      <div class="detail-row">Birth: ${item.birth || ''}</div>
+      <div class="detail-row">Clubs: ${item.clubs || ''}</div>
+      <div class="detail-row">Address: ${item.address || ''}</div>
+    `
+    : `
+      <div class="detail-row">Dept: ${item.dept || ''}</div>
+      <div class="detail-row">Room: ${item.room || ''}</div>
+    `;
+
+  menu.innerHTML = `
+    <div class="search-header">
+      <button class="home-but" onclick="go('home')">Home</button>
+    </div>
+    <div class="detail">
+      <img class="detail-img" src="${img}" alt="${name}">
+      <div class="detail-name">${name}</div>
+      ${body}
+      <button class="but" onclick="renderSearch()">Back</button>
+    </div>
+  `;
+}
+
+function renderPlaceDetail(p) {
+  const menu = document.getElementById('menu');
+  menu.innerHTML = `
+    <div class="search-header">
+      <button class="home-but" onclick="go('home')">Home</button>
+    </div>
+    <div class="place-row" style="margin-top:10px">
+      <div class="place-name" style="margin-bottom:8px">${p.place || ''}</div>
+      <div class="place-photos">
+        <figure><img src="${p.then || ''}" alt="Then"><figcaption>Then</figcaption></figure>
+        <figure><img src="${p.now || ''}"  alt="Now"><figcaption>Now</figcaption></figure>
+      </div>
+      <button class="but" style="margin-top:12px" onclick="renderSearch()">Back</button>
+    </div>
+  `;
+}
+
 function renderSearch() {
   const menu = document.getElementById('menu');
   menu.innerHTML = `
@@ -205,6 +251,7 @@ function renderSearch() {
       <div class="who-group">
         <button class="seg" data-role="who" data-val="class">Classmate</button>
         <button class="seg" data-role="who" data-val="teacher">Teacher</button>
+        <button class="seg" data-role="who" data-val="place">Place</button>
       </div>
 
       <label class="search-label">Name</label>
@@ -235,35 +282,57 @@ function renderSearch() {
     runSearch(who, q);
   });
 }
-
+function openDetailFromSearch(el) {
+  const role = el.dataset.role;
+  const idx = Number(el.dataset.idx);
+  if (role === 'class') return renderPersonDetail(DATA.classmates[idx], 'class');
+  if (role === 'teacher') return renderPersonDetail(DATA.teachers[idx], 'teacher');
+  if (role === 'place') return renderPlaceDetail(DATA.places[idx]);
+}
 function runSearch(who, q) {
   const tgt = document.getElementById('search-results');
-  let list = [];
-  if (who === 'class') {
-    list = DATA.classmates.filter(c => !q || (c.name || '').toLowerCase().includes(q));
-  } else {
-    list = DATA.teachers.filter(t => !q || (t.name || '').toLowerCase().includes(q));
-  }
+  const qq = (q || '').toLowerCase();
 
-  if (!list.length) {
-    tgt.innerHTML = `<p class="muted">No results.</p>`;
+  let list = [];
+  if (who === 'class') list = DATA.classmates.filter(c => !qq || (c.name || '').toLowerCase().includes(qq));
+  else if (who === 'teacher') list = DATA.teachers.filter(t => !qq || (t.name || '').toLowerCase().includes(qq));
+  else if (who === 'place') list = DATA.places.filter(p => !qq || (p.place || '').toLowerCase().includes(qq));
+
+  const exact = list.filter(x => ((x.name || x.place || '').toLowerCase() === qq));
+  if (exact.length === 1) {
+    if (who === 'place') renderPlaceDetail(exact[0]); else renderPersonDetail(exact[0], who);
+    return;
+  }
+  if (list.length === 1) {
+    if (who === 'place') renderPlaceDetail(list[0]); else renderPersonDetail(list[0], who);
     return;
   }
 
-  // 큰 이미지 타일(와이어프레임 느낌)
+  if (!list.length) { tgt.innerHTML = `<p class="muted">No results.</p>`; return; }
+
+  // 여러 결과 → 각 카드에 “View Details” 버튼 표시
   let html = '';
-  list.forEach(item => {
-    const name = item.name || '';
-    const img = item.photo || '';
+  list.forEach((item) => {
+    const title = item.name || item.place || '';
+    const img = item.photo || item.then || '';
+    const base = (who === 'class') ? DATA.classmates
+      : (who === 'teacher') ? DATA.teachers
+        : DATA.places;
+    const oid = base.indexOf(item);   // ← 원본 배열에서의 인덱스
     html += `
-      <figure class="tile">
-        <img src="${img}" alt="${name}" />
-        <figcaption>${name}</figcaption>
-      </figure>
-    `;
+    <figure class="tile" data-role="${who}" data-idx="${oid}">
+      <div class="tile-img-wrap">
+        <img src="${img}" alt="${title}" />
+        <button class="view-btn" onclick="openDetailFromSearch(this.parentElement.parentElement)">View Details</button>
+      </div>
+      <figcaption>${title}</figcaption>
+    </figure>
+  `;
   });
   tgt.innerHTML = html;
 }
+
+
 
 
 /***** 7) Post Comment *****/
@@ -294,32 +363,118 @@ function addComment() {
 }
 
 /***** 8) Update + CSV 다운로드 *****/
+/***** UPDATE FLOW *****/
+// 이름 분해/합치기 유틸
+function splitName(full) {
+  const s = (full || "").trim();
+  if (!s) return { first: "", last: "" };
+  const parts = s.split(/\s+/);
+  if (parts.length === 1) return { first: parts[0], last: "" };
+  const last = parts.pop();
+  return { first: parts.join(" "), last };
+}
+function joinName(first, last) {
+  const f = (first || "").trim(), l = (last || "").trim();
+  return l ? `${f} ${l}`.trim() : f;
+}
+
+// 0) Update 진입 화면 (What 선택)
 function renderUpdate() {
   const menu = document.getElementById('menu');
-  const c0 = DATA.classmates[0] || { name: "", birth: "", clubs: "", address: "", whereto: "", photo: "" };
   menu.innerHTML = `
-    <button class="home-but" onclick="go('home')">Home</button>
-    <h3>Update</h3>
-    <div class="upd-form">
-      <label>이름 <input id="u_name" value="${c0.name}"></label>
-      <label>생일 <input id="u_birth" value="${c0.birth}" placeholder="YYYY-MM-DD"></label>
-      <label>동아리 <input id="u_clubs" value="${c0.clubs}"></label>
-      <label>주소 <input id="u_addr" value="${c0.address}"></label>
-      <label>진로 <input id="u_where" value="${c0.whereto}"></label>
-      <button class="but" onclick="applyUpdate()">Apply</button>
-      <button class="but hollow" onclick="downloadResource()">Download resource.txt</button>
+    <div class="update-header">
+      <button class="home-but" onclick="go('home')">Home</button>
     </div>
-    <p class="muted">* 과제 요건상 실제 파일 저장은 브라우저 보안정책으로 제한됩니다. 'Download resource.txt' 버튼으로 변경된 내용을 CSV로 저장하세요.</p>
+
+    <div class="update-what">
+      <div class="update-label">What</div>
+      <div class="who-group">
+        <button class="seg" onclick="renderUpdatePick('class')">Classmate</button>
+        <button class="seg" onclick="renderUpdatePick('teacher')">Teacher</button>
+      </div>
+    </div>
   `;
 }
-function applyUpdate() {
-  if (!DATA.classmates.length) { alert("수정할 classmate가 없습니다."); return; }
-  DATA.classmates[0].name = document.getElementById('u_name').value || "";
-  DATA.classmates[0].birth = document.getElementById('u_birth').value || "";
-  DATA.classmates[0].clubs = document.getElementById('u_clubs').value || "";
-  DATA.classmates[0].address = document.getElementById('u_addr').value || "";
-  DATA.classmates[0].whereto = document.getElementById('u_where').value || "";
-  alert("적용되었습니다. 다운로드하여 resource.txt를 교체하세요.");
+
+// 1) 대상(사람) 선택 화면
+function renderUpdatePick(role) {
+  const list = role === 'class' ? DATA.classmates : DATA.teachers;
+  const menu = document.getElementById('menu');
+  const options = list.map((p, i) => `<option value="${i}">${p.name || '(no name)'}</option>`).join('');
+  menu.innerHTML = `
+    <button class="home-but" onclick="go('home')">Home</button>
+
+    <div class="update-pick">
+      <label class="update-label">${role === 'class' ? 'Classmate' : 'Teacher'}</label>
+      <select id="upd_target" class="upd-select">${options}</select>
+      <div class="update-actions">
+        <button class="but" onclick="renderUpdateForm('${role}', Number(document.getElementById('upd_target').value))">Next</button>
+        <button class="but hollow" onclick="renderUpdate()">Back</button>
+      </div>
+    </div>
+  `;
+}
+
+// 2) 상세 폼 화면 (First/Last/Address/Picture)
+function renderUpdateForm(role, idx) {
+  const list = role === 'class' ? DATA.classmates : DATA.teachers;
+  const p = list[idx] || {};
+  const { first, last } = splitName(p.name || "");
+
+  const menu = document.getElementById('menu');
+  menu.innerHTML = `
+    <div class="update-header">
+      <button class="home-but" onclick="go('home')">Home</button>
+    </div>
+    <div class="upd-form big">
+      <label>First name <input id="fn" value="${first}"></label>
+      <label>Last name  <input id="ln" value="${last}"></label>
+
+      ${role === 'class' ? `
+        <label>Address <textarea id="addr" rows="4">${p.address || ""}</textarea></label>
+      ` : `
+        <label>Room <input id="room" value="${p.room || ""}"></label>
+        <label>Dept <input id="dept" value="${p.dept || ""}"></label>
+      `}
+
+      <label>Picture file <input id="pic" placeholder="e.g., 2.jpg" value="${(p.photo || '').replace(/^pics\//, '')}"></label>
+
+      <div class="update-actions two">
+        <button class="but" onclick="applyUpdateForm('${role}', ${idx})">Update</button>
+        <button class="but hollow" onclick="renderUpdatePick('${role}')">Cancel</button>
+      </div>
+
+      <div class="update-download">
+        <button class="but hollow" onclick="downloadResource()">Download resource.txt</button>
+        <div class="muted">* 브라우저 보안 정책상 파일 직접 저장은 불가 → 다운받아 기존 resource.txt 교체</div>
+      </div>
+    </div>
+  `;
+}
+
+// 3) 적용
+function applyUpdateForm(role, idx) {
+  const list = role === 'class' ? DATA.classmates : DATA.teachers;
+  const p = list[idx]; if (!p) return;
+
+  const name = joinName(
+    document.getElementById('fn').value,
+    document.getElementById('ln').value
+  );
+  p.name = name;
+
+  if (role === 'class') {
+    p.address = document.getElementById('addr').value || "";
+  } else {
+    p.room = document.getElementById('room').value || "";
+    p.dept = document.getElementById('dept').value || "";
+  }
+
+  const pic = (document.getElementById('pic').value || "").trim();
+  p.photo = pic ? `pics/${pic}` : "";
+
+  alert('Updated in memory. Use "Download resource.txt" to save this change.\n(You will stay on this page.)');
+
 }
 
 function downloadResource() {
