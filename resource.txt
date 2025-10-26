@@ -10,3 +10,10 @@ teacher,103,Prof. Daphne Koller,1968-08-27,,,,103.jpg,ML,Engineering 220,,,
 place,201,,,,,,,,,"Main Hall",201_then.jpg,201_now.jpg
 place,202,,,,,,,,,"Physics Lab",202_then.jpg,202_now.jpg
 place,203,,,,,,,,,"Classroom A",203_then.jpg,203_now.jpg
+memo,301,Calculus Textbook,1998,Textbook,"미적분 교과서. 1학년 때 쓰던 표지.",,301.jpg,,,,
+memo,302,Canvas School Bag,2001,Bag,"학교 로고가 찍힌 캔버스 가방.",,302.jpg,,,,
+memo,303,Winter Uniform,2003,Uniform,"겨울 교복 재킷과 니트 타이.",,303.jpg,,,,
+memo,304,Metal Lunchbox,1995,Lunchbox,"도시락 데이 때 쓰던 양은 도시락.",,304.jpg,,,,
+memo,305,Pager & MP3,2004,Trend,"그 시절 유행하던 삐삐와 MP3 플레이어.",,305.jpg,,,,
+memo,306,Field Trip to Main Hall,2015,FieldTrip,"수학여행 단체 사진(본관 계단).",,306.jpg,,,,
+

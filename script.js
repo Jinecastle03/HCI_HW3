@@ -1,6 +1,6 @@
 
 /***** 1) 전역 상태 *****/
-let DATA = { classmates: [], teachers: [], places: [] };
+let DATA = { classmates: [], teachers: [], places: [], memos: [] };
 let COMMENTS_KEY = "iyb_hw3_comments_v1";
 
 /***** 유틸: 로컬 스토리지 댓글 불러오기/저장 *****/
@@ -59,7 +59,7 @@ function parseCSV(text) {
 /***** 3) rows → 내부 구조(DATA) 빌드 *****/
 function buildDataStructures({ header, rows }) {
   const hasType = header.includes("type");
-  const out = { classmates: [], teachers: [], places: [] };
+  const out = { classmates: [], teachers: [], places: [], memos: [] };
 
   rows.forEach(r => {
     const type = hasType ? (r.type || "").toLowerCase() : "class";
@@ -88,6 +88,20 @@ function buildDataStructures({ header, rows }) {
         then: r.then ? `pics/${r.then}` : "",
         now: r.now ? `pics/${r.now}` : ""
       });
+    } else if (type === "memo") {
+      out.memos.push({
+        id: r.id || "",
+        // 카테고리(예: Textbook/Bag/Uniform/Lunchbox/Trend/FieldTrip)
+        category: (r.clubs || "").trim(),
+        // 제목: name 칼럼 사용
+        title: (r.name || "").trim(),
+        // 연도(선택): birth 칼럼 사용
+        year: (r.birth || "").trim(),
+        // 설명: address 칼럼 사용
+        desc: (r.address || "").trim(),
+        // 대표 이미지: picture 칼럼 사용
+        photo: r.picture ? `pics/${r.picture}` : ""
+      })
     }
   });
   DATA = out;
@@ -190,6 +204,114 @@ function renderTeachers() {
     `;
   });
   menu.innerHTML = html;
+}
+
+function renderMemorabilia() {
+  const menu = document.getElementById('menu');
+
+  // 카테고리 후보(없으면 "All")
+  const CATS = ["All", "Textbook", "Bag", "Uniform", "Lunchbox", "Trend", "FieldTrip"];
+  const chips = CATS.map(c => `<button class="chip" data-cat="${c}">${c}</button>`).join("");
+
+  menu.innerHTML = `
+    <div class="mem-header">
+      <button class="home-but" onclick="go('home')">Home</button>
+      <h3>Memorabilia</h3>
+      <div class="mem-chips">${chips}</div>
+
+      <div class="mem-search">
+        <input id="memq" class="search-input" placeholder="Search title/desc..." />
+        <button class="but" id="memSearchBtn">Search</button>
+      </div>
+    </div>
+    <div id="memGrid" class="mem-grid"></div>
+    <div id="memEmpty" class="muted" style="display:none">No items.</div>
+
+    <!-- 상세 모달 -->
+    <dialog id="memDlg" class="mem-dialog">
+      <div class="mem-dialog-body">
+        <img id="memDlgImg" class="mem-dlg-img" alt="">
+        <div class="mem-dlg-text">
+          <div id="memDlgTitle" class="mem-dlg-title"></div>
+          <div id="memDlgMeta" class="mem-dlg-meta"></div>
+          <div id="memDlgDesc" class="mem-dlg-desc"></div>
+        </div>
+      </div>
+      <div class="mem-dialog-actions">
+        <button class="but hollow" id="memDlgClose">Close</button>
+      </div>
+    </dialog>
+  `;
+
+  const chipBtns = Array.from(document.querySelectorAll('.chip'));
+  let selected = "All";
+
+  function applyFilter() {
+    const q = (document.getElementById('memq').value || "").toLowerCase().trim();
+    const list = DATA.memos.filter(m => {
+      const catOk = (selected === "All") || ((m.category || "").toLowerCase() === selected.toLowerCase());
+      const txt = (m.title || "") + " " + (m.desc || "");
+      const qOk = !q || txt.toLowerCase().includes(q);
+      return catOk && qOk;
+    });
+
+    const grid = document.getElementById('memGrid');
+    const empty = document.getElementById('memEmpty');
+
+    if (!list.length) {
+      grid.innerHTML = "";
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+
+    grid.innerHTML = list.map((m, i) => `
+      <figure class="mem-card" data-idx="${i}">
+        <div class="mem-thumb-wrap">
+          <img class="mem-thumb" src="${m.photo}" alt="${m.title}">
+        </div>
+        <figcaption class="mem-caption">
+          <div class="mem-title">${m.title || "(Untitled)"}</div>
+          <div class="mem-meta">${m.category || ""}${m.year ? " • " + m.year : ""}</div>
+        </figcaption>
+      </figure>
+    `).join("");
+
+    // 카드 클릭 → 모달
+    Array.from(document.querySelectorAll('.mem-card')).forEach(card => {
+      card.addEventListener('click', () => {
+        const idx = Number(card.dataset.idx);
+        const item = list[idx];
+        const dlg = document.getElementById('memDlg');
+        document.getElementById('memDlgImg').src = item.photo || "";
+        document.getElementById('memDlgImg').alt = item.title || "";
+        document.getElementById('memDlgTitle').textContent = item.title || "";
+        document.getElementById('memDlgMeta').textContent = `${item.category || ""}${item.year ? " • " + item.year : ""}`;
+        document.getElementById('memDlgDesc').textContent = item.desc || "";
+        dlg.showModal();
+      });
+    });
+  }
+
+  // 카테고리 토글
+  function select(cat) {
+    selected = cat;
+    chipBtns.forEach(b => b.classList.toggle('chip-selected', b.dataset.cat === cat));
+    applyFilter();
+  }
+  chipBtns.forEach(b => b.addEventListener('click', () => select(b.dataset.cat)));
+  select("All");
+
+  // 검색
+  document.getElementById('memSearchBtn').addEventListener('click', applyFilter);
+  document.getElementById('memq').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') applyFilter();
+  });
+
+  // 모달 닫기
+  document.getElementById('memDlgClose').addEventListener('click', () => {
+    document.getElementById('memDlg').close();
+  });
 }
 
 /***** 6) Search (Who + Name + 썸네일 결과) *****/
@@ -526,6 +648,8 @@ function go(page) {
     renderClassmates();
   } else if (page === 'teachers') {
     renderTeachers();
+  } else if (page === 'memorabilia') {
+    renderMemorabilia();
   } else if (page === 'search') {
     renderSearch();
   } else if (page === 'post') {
