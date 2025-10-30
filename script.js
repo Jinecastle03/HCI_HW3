@@ -2,6 +2,7 @@
 /***** 1) 전역 상태 *****/
 let DATA = { classmates: [], teachers: [], places: [], memos: [] };
 let COMMENTS_KEY = "iyb_hw3_comments_v1";
+const NEWS_KEY = "iyb_hw3_news_v1";   // ← 추가!
 
 /***** 유틸: 로컬 스토리지 댓글 불러오기/저장 *****/
 function loadComments() {
@@ -21,6 +22,24 @@ function saveComments(list) {
     console.warn("saveComments failed:", e);
   }
 }
+function loadNews() {
+  try {
+    const raw = localStorage.getItem(NEWS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn("loadNews failed:", e);
+    return [];
+  }
+}
+function saveNews(list) {
+  try {
+    localStorage.setItem(NEWS_KEY, JSON.stringify(list || []));
+  } catch (e) {
+    console.warn("saveNews failed:", e);
+  }
+}
+
 
 /***** 2) CSV 파서 (따옴표/콤마 대응, BOM 제거) *****/
 function parseCSV(text) {
@@ -131,6 +150,10 @@ function renderMainMenu() {
     <button class="but" onclick="go('search')">Search</button>
     <button class="but" onclick="go('post')">Post Comment</button>
     <button class="but" onclick="go('update')">Update</button>
+    <button class="but" onclick="go('share')">Share News</button>
+    <button class="but" onclick="go('zoom')">Zoom Gathering</button>
+    <button class="but" onclick="go('exp3d')">3D Reenactment</button>
+    <button class="but" onclick="openSettings()">Settings</button>
   `;
 }
 
@@ -404,6 +427,41 @@ function renderSearch() {
     runSearch(who, q);
   });
 }
+function renderShare() {
+  const menu = document.getElementById('menu');
+  const news = loadNews();
+  let items = news.map(n => `
+    <div class="news-item">
+      <div class="news-meta">${n.author} • ${new Date(n.ts).toLocaleString()}</div>
+      <div class="news-title">${n.title}</div>
+      <div class="news-text">${n.text}</div>
+    </div>
+  `).join("");
+  if (!items) items = `<p class="muted">아직 소식이 없습니다.</p>`;
+
+  menu.innerHTML = `
+    <button class="home-but" onclick="go('home')">Home</button>
+    <h3>Share News</h3>
+    <div class="news-form">
+      <input id="newsTitle" class="search-input" placeholder="제목" />
+      <textarea id="newsBody" class="comment-text" placeholder="내용을 입력하세요"></textarea>
+      <input id="newsAuthor" class="search-input" placeholder="작성자 (선택)" />
+      <button class="but" onclick="addNews()">Post</button>
+    </div>
+    <div id="news-list">${items}</div>
+  `;
+}
+function addNews() {
+  const title = (document.getElementById('newsTitle').value || "").trim();
+  const text = (document.getElementById('newsBody').value || "").trim();
+  const author = (document.getElementById('newsAuthor').value || "Anonymous").trim();
+  if (!title || !text) return alert("제목과 내용을 모두 입력하세요.");
+  const list = loadNews();
+  list.unshift({ title, text, author, ts: Date.now() });
+  saveNews(list);
+  renderShare();
+}
+
 function openDetailFromSearch(el) {
   const role = el.dataset.role;
   const idx = Number(el.dataset.idx);
@@ -656,6 +714,12 @@ function go(page) {
     renderPost();
   } else if (page === 'update') {
     renderUpdate();
+  } else if (page === 'share') {
+    renderShare();
+  } else if (page === 'zoom') {
+    renderZoom();
+  } else if (page === 'exp3d') {
+    render3D();
   }
 }
 
@@ -664,3 +728,284 @@ window.addEventListener("DOMContentLoaded", () => {
   autoLoadResource();
   renderMainMenu();
 });
+
+
+/* ========= Settings (Theme & BGM) ========= */
+const THEME_KEY = "iyb_hw3_theme_v1";
+const BGM_KEY = "iyb_hw3_bgm_v1";
+
+function openSettings() {
+  const menu = document.getElementById('menu');
+  const theme = JSON.parse(localStorage.getItem(THEME_KEY) || '{"bg":"","opacity":1}');
+  const bgm = JSON.parse(localStorage.getItem(BGM_KEY) || '{"url":"","title":""}');
+  menu.innerHTML = `
+    <button class="home-but" onclick="go('home')">Home</button>
+    <h3>Settings</h3>
+    <div class="set-row">
+      <label style="min-width:120px">Wallpaper URL</label>
+      <input id="wallUrl" placeholder="e.g., pics/wallpaper.jpg" value="${theme.bg || ""}">
+      <button class="but" onclick="applyTheme()">Apply</button>
+    </div>
+    <div class="set-row">
+      <label style="min-width:120px">Background Opacity</label>
+      <input id="wallOpacity" type="number" step="0.1" min="0" max="1" value="${theme.opacity ?? 1}">
+    </div>
+    <div class="set-row">
+      <label style="min-width:120px">BGM URL</label>
+      <input id="bgmUrl" placeholder="e.g., music/bgm.mp3" value="${bgm.url || ""}">
+      <input id="bgmTitle" placeholder="title (optional)" value="${bgm.title || ""}">
+      <button class="but" onclick="applyBGM()">Save</button>
+    </div>
+  `;
+}
+
+function applyTheme() {
+  const url = (document.getElementById('wallUrl').value || "").trim();
+  const opacity = Number(document.getElementById('wallOpacity').value || "1");
+  localStorage.setItem(THEME_KEY, JSON.stringify({ bg: url, opacity: isNaN(opacity) ? 1 : opacity }));
+  syncTheme();
+  alert("Theme updated");
+}
+
+function syncTheme() {
+  const theme = JSON.parse(localStorage.getItem(THEME_KEY) || '{"bg":"","opacity":1}');
+  const bg = document.getElementById('app-bg');
+  if (bg) {
+    bg.style.setProperty('--bg', theme.bg ? `url('${theme.bg}')` : '#f7fbff');
+    bg.style.setProperty('--bgOpacity', theme.opacity ?? 1);
+  }
+}
+
+function applyBGM() {
+  const url = (document.getElementById('bgmUrl').value || "").trim();
+  const title = (document.getElementById('bgmTitle').value || "").trim();
+  localStorage.setItem(BGM_KEY, JSON.stringify({ url, title }));
+  alert("BGM saved. Use ▶︎ BGM in the toolbar.");
+  syncBGMLabel();
+}
+
+function toggleBGM() {
+  const au = document.getElementById('bgm');
+  const conf = JSON.parse(localStorage.getItem(BGM_KEY) || '{"url":""}');
+  if (!conf.url) { alert("Set BGM URL in Settings first."); return; }
+  if (au.src !== conf.url) au.src = conf.url;
+  if (au.paused) { au.play(); } else { au.pause(); }
+  syncBGMLabel();
+}
+
+function syncBGMLabel() {
+  const au = document.getElementById('bgm');
+  const label = document.getElementById('bgmNow');
+  const conf = JSON.parse(localStorage.getItem(BGM_KEY) || '{"url":"","title":""}');
+  if (!label) return;
+  label.textContent = conf.title ? `${au.paused ? '⏸' : '♪'} ${conf.title}` : (au.paused ? '⏸' : '♪');
+}
+
+/* Wire toolbar & theme on load */
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('bgmToggle')?.addEventListener('click', toggleBGM);
+  syncTheme();
+  syncBGMLabel();
+});
+
+
+/* ===== Zoom Gathering (minimal) ===== */
+const EVENTS_KEY = "iyb_hw3_events_v1";
+function loadEvents() { try { return JSON.parse(localStorage.getItem(EVENTS_KEY) || "[]"); } catch (e) { return []; } }
+function saveEvents(v) { localStorage.setItem(EVENTS_KEY, JSON.stringify(v || [])); }
+
+function renderZoom() {
+  const menu = document.getElementById('menu');
+  const list = loadEvents().sort((a, b) => a.when.localeCompare(b.when));
+  const items = list.map((e, i) => `
+    <div class="ev-item">
+      <div class="ev-title">${e.title}</div>
+      <div class="ev-meta">${new Date(e.when).toLocaleString()} • ${e.host || 'host'} • <a href="${e.link}" target="_blank">Join</a></div>
+      <div class="ev-note">${e.note || ''}</div>
+      <div class="ev-actions">
+        <button class="but hollow" onclick="copyText('${e.link.replace(/'/g, '&#39;')}')">Copy Link</button>
+        <button class="but hollow" onclick="delEvent(${i})">Delete</button>
+      </div>
+    </div>
+  `).join("") || `<p class="muted" style="text-align:center">No events yet.</p>`;
+
+  menu.innerHTML = `
+    <button class="home-but" onclick="go('home')">Home</button>
+    <h3>Zoom Gathering</h3>
+    <div class="ev-form">
+      <input class="search-input" id="evTitle" placeholder="Title">
+      <input class="search-input" id="evWhen" type="datetime-local">
+      <input class="search-input" id="evLink" placeholder="Zoom/Meet link">
+      <input class="search-input" id="evHost" placeholder="Host (optional)">
+      <textarea class="comment-text" id="evNote" placeholder="Notes (optional)"></textarea>
+      <button class="but" onclick="addEvent()">Add Event</button>
+    </div>
+    <h4 style="margin-top:12px">Upcoming</h4>
+    <div class="ev-list">${items}</div>
+  `;
+}
+function addEvent() {
+  const title = (document.getElementById('evTitle').value || "").trim();
+  const when = (document.getElementById('evWhen').value || "").trim();
+  const link = (document.getElementById('evLink').value || "").trim();
+  const host = (document.getElementById('evHost').value || "").trim();
+  const note = (document.getElementById('evNote').value || "").trim();
+  if (!title || !when || !link) return alert("Title, time, and link are required.");
+  const list = loadEvents(); list.push({ title, when, link, host, note }); saveEvents(list); renderZoom();
+}
+function delEvent(i) {
+  const list = loadEvents(); list.splice(i, 1); saveEvents(list); renderZoom();
+}
+function copyText(t) {
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t);
+  alert("Copied!");
+}
+
+
+/* ==== Ensure extra buttons exist on Home menu ==== */
+function ensureExtraButtons() {
+  const menu = document.getElementById('menu');
+  if (!menu) return;
+  const txt = menu.innerHTML;
+  // Only add when we're on the Home menu (Look/Memorabilia/Search/Post/Update/Share are present)
+  const isHome = txt.includes("Look Around") && txt.includes("Share News");
+  const hasZoom = txt.includes("Zoom Gathering");
+  if (isHome && !hasZoom) {
+    // 1. onclick 속성 값(')을 이스케이프 처리합니다.
+    // 2. 닫는 태그의 슬래시(/)를 이스케이프 처리합니다.
+    // 3. \s* (공백)을 올바르게 사용합니다.
+    const regexPattern = /<button class="but" onclick="go\('share'\)">Share News<\/button>\s*<\/div>/;
+
+    // 교체될 HTML
+    const replacementHTML = `<button class="but" onclick="go('share')">Share News</button>
+      <button class="but" onclick="renderZoom()">Zoom Gathering</button>
+      <button class="but" onclick="go('exp3d')">3D Reenactment</button>
+      <button class="but" onclick="openSettings()">Settings</button>
+    </div>`;
+
+    menu.innerHTML = txt.replace(regexPattern, replacementHTML);
+  }
+}
+
+(function hookHome() {
+  // If a global go() exists, wrap it so that after rendering 'home' we ensure buttons.
+  const tryHook = () => {
+    if (typeof window.go === 'function' && !window.go.__patched) {
+      const _go = window.go;
+      const wrapped = function (page) {
+        const r = _go.apply(this, arguments);
+        if (page === 'home') {
+          // after the existing render flushes, fix buttons
+          setTimeout(ensureExtraButtons, 0);
+        }
+        return r;
+      };
+      wrapped.__patched = true;
+      window.go = wrapped;
+      // also run once on load
+      ensureExtraButtons();
+    } else {
+      // try again shortly; some apps define go later
+      setTimeout(tryHook, 50);
+    }
+  };
+  tryHook();
+})();
+
+// Run once at DOM ready as well
+window.addEventListener('DOMContentLoaded', ensureExtraButtons);
+
+/* === 3D Reenactment (Then/Now carousel) === */
+let _angle3D = 0;
+let _key3DHandler = null;
+
+function _getRadius() {
+  // 화면 폭의 32~35% 사이로 제한, 최소 140, 최대 320
+  const w = Math.max(320, Math.min(window.innerWidth, 1200));
+  return Math.max(140, Math.min(320, Math.floor(w * 0.34)));
+}
+
+function render3D() {
+  const menu = document.getElementById('menu');
+
+  // DATA.places에서 then/now 가진 항목만 사용
+  const items = (DATA && DATA.places ? DATA.places : []).filter(p => p.then && p.now);
+  if (!items.length) {
+    menu.innerHTML = `
+      <button class="home-but" onclick="go('home')">Home</button>
+      <h3>3D Reenactment</h3>
+      <p class="muted">then/now 이미지를 가진 place 항목이 없습니다. resource.txt에 추가해 주세요.</p>
+    `;
+    return;
+  }
+
+  const step = 360 / items.length;
+  const R = _getRadius();                 // ← 고정값 대신 동적 반경
+  const slides = items.map((p, idx) => `
+  <div class="slide" style="transform: rotateY(${idx * step}deg) translateZ(${R}px)">
+    <figure><img src="${p.then}" alt="${p.place || 'Then'} (then)"></figure>
+    <figure><img src="${p.now}"  alt="${p.place || 'Now'} (now)"></figure>
+  </div>
+`).join("");
+
+  menu.innerHTML = `
+    <button class="home-but" onclick="go('home')">Home</button>
+    <h3>3D Reenactment</h3>
+    <div class="stage">
+      <div id="carousel" class="carousel">${slides}</div>
+    </div>
+    <div class="ctrls">
+      <button class="but" onclick="spin3D(-1)">⟵ Prev</button>
+      <button class="but hollow" onclick="spin3D(1)">Next ⟶</button>
+    </div>
+    <p class="muted" style="text-align:center">Tip: ◀︎/▶︎ 키로 회전</p>
+  `;
+
+  _angle3D = 0;
+  updateSpin3D(step);
+
+  // 키보드 컨트롤
+  _key3DHandler = (e) => {
+    if (e.key === 'ArrowRight') spin3D(1, step);
+    if (e.key === 'ArrowLeft') spin3D(-1, step);
+  };
+  document.addEventListener('keydown', _key3DHandler);
+}
+
+function spin3D(dir, step) {
+  const items = (DATA && DATA.places ? DATA.places : []).filter(p => p.then && p.now);
+  const st = step || (items.length ? 360 / items.length : 40);
+  _angle3D += st * dir;
+  updateSpin3D(st);
+}
+
+function updateSpin3D() {
+  const car = document.getElementById('carousel');
+  if (!car) return;
+  const R = _getRadius();
+  car.style.transform = `translateZ(-${R}px) rotateY(${_angle3D}deg)`;
+}
+
+// 페이지 전환 시 키보드 핸들러 정리
+const __origGo = typeof go === 'function' ? go : null;
+if (__origGo && !__origGo.__with3dcleanup) {
+  const wrapped = function (page) {
+    if (_key3DHandler && page !== 'exp3d') {
+      document.removeEventListener('keydown', _key3DHandler);
+      _key3DHandler = null;
+    }
+    return __origGo.apply(this, arguments);
+  };
+  wrapped.__with3dcleanup = true;
+  go = wrapped;
+}
+window.addEventListener('resize', () => {
+  if (document.getElementById('carousel')) {
+    const keep = _angle3D;   // 현재 각도 유지
+    render3D();
+    _angle3D = keep;
+    updateSpin3D();
+  }
+});
+
+

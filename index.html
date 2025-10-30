@@ -1,22 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Interactive Yearbook (HW3)</title>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <header>
-    <h2>Korea Univ Informatics of 2025</h2>
-  </header>
+  <div id="app-bg"></div>
+  <header><h2>Korea Univ Informatics of 2025</h2></header>
+
+  <div id="global-toolbar">
+    <div class="left">
+      <button id="themeBtn" class="mini" onclick="openSettings()">🎨 Theme</button>
+    </div>
+    <div class="right">
+      <button id="bgmToggle" class="mini">▶︎ BGM</button>
+      <span id="bgmNow" class="muted mini-label"></span>
+    </div>
+  </div>
+
   <div id="menu">
     <button class="but" onclick="go('look')">Look Around</button>
     <button class="but" onclick="go('memorabilia')">Memorabilia</button>
     <button class="but" onclick="go('search')">Search</button>
     <button class="but" onclick="go('post')">Post Comment</button>
     <button class="but" onclick="go('update')">Update</button>
+    <button class="but" onclick="go('share')">Share News</button>
+    <button class="but" onclick="go('zoom')">Zoom Gathering</button>
+    <button class="but" onclick="go('exp3d')">3D Reenactment</button>
+    <button class="but" onclick="openSettings()">Settings</button>
   </div>
+
+  <audio id="bgm" loop preload="none"></audio>
   <script src="script.js"></script>
 </body>
 </html>
